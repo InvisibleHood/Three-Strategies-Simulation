@@ -123,7 +123,7 @@ def get_total_incoming_rate(m, n, wi, b, c, p, k, q, grids, big_lamda, lij):
     #Group level:
     for d in range(n + 1):
         for l in range(n - d + 1):
-            if abs(d - i) > 1 or abs(l - j) > 1 or (d == i + 1 and d == j + 1) or (d == i - 1 and l == j - 1):
+            if abs(d - i) > 1 or abs(l - j) > 1 or (d == i + 1 and l == j + 1) or (d == i - 1 and l == j - 1):
                 incoming_rate_matrix[d,l] = (big_lamda * fij * m * rou(d/n, l/n, i/n, j/n,b,c,q,p,k) * frac(d,l,m,grids))
             
     return incoming_rate_matrix
@@ -146,104 +146,129 @@ def draw_time_poisson(leaving_rate_matrix):
 
 def draw_random_coord(matrix):
     prob_matrix = matrix / np.sum(matrix)
-    print("\033[33mProbability matrix (prob_matrix):\033[0m\n", prob_matrix)
+    #print("\033[33mProbability matrix (prob_matrix):\033[0m\n", prob_matrix)
     flat_probs = prob_matrix.flatten()  
     chosen_idx = np.random.choice(len(flat_probs), p=flat_probs)
     return np.unravel_index(chosen_idx, prob_matrix.shape)  # Convert back to (row, col)
 
 def main():
-    m = 60   # Number of groups 
-    n = 5    # Number of individuals in each group
+    m = 20   # Number of groups 
+    n = 6    # Number of individuals in each group
     
     # Define parameters
-    wi = 0.5  # Intensity of individual-level selection
-    b = 8.0     # Benefit of cooperation
+    wi = 0.9  # Intensity of individual-level selection
+    b = 2.0     # Benefit of cooperation
     c = 1.0     # Cost of benefiting others 
-    p = 0.5   # Additional cost to confer a punishment to a defector
-    k = 0.1     # Fixed cost of punishment for each interaction 
-    q = 2   # Single fixed cost to confer punishment on defectors 
+    p = 0   # Additional cost to confer a punishment to a defector
+    k = 0     # Fixed cost of punishment for each interaction 
+    q = 0   # Single fixed cost to confer punishment on defectors 
 
-    big_lamda = 10     #rate of group-level competition in which each group engages in pairwise competitions with other groups 
+    big_lamda = 0.1     #rate of group-level competition in which each group engages in pairwise competitions with other groups 
     
-    # Create a Params object to access parameters by name
-    #params = Params(wi, b, c, p, k, q, m, n)
     
-    grids = assign_initial_strategies(m, n) #row represents i, the # of coop; column represents j, the # of defectors; [0,n] for i and j
-    print("\033[1;32mEqually distributed grids:\033[0m")
-    print(grids)
 
+    c_vs_p_cwin = 0
+    c_vs_p_pwin = 0
+    c_vs_p_equal = 0
+    
     with open('output.txt', 'w') as f1:
         f1.write("")  # Clear file content at the start
-
-    with open('probabilities.txt', 'w') as f2:
-        f2.write("")  # Clear file content at the start
-
-    T = 0.0  # time
-    all_coop = 0
-    all_def = 0
-    all_pun = 0
-    for i in range(100):
-        while grids[0,0] != m and grids[0,n] != m and grids[n,0] != m:
-            leaving_rate_matrix = get_total_leaving_rate(m, n, wi, b, c, p, k, q, grids, big_lamda)
-            print("\033[33mTotal Leaving rates (leaving_rate_matrix):\033[0m\n", leaving_rate_matrix) 
-            with open('probabilities.txt', 'a') as f2:
-                f2.write(f"Iteration {i} leaving rate matrix:\n")
-                f2.write(str(leaving_rate_matrix) + "\n")
-
-            if np.any(leaving_rate_matrix < -1e-8):
-                raise ValueError(f"\033[31mNegative values in leaving rates (leaving_rate_matrix)\033[0m\n: {leaving_rate_matrix}")
-
-            if np.sum(leaving_rate_matrix) == 0:
-                raise ValueError("\033[31mSum of leaving rates (L) is zero, unable to draw random numbers.\033[0m")
-            
-            tau = draw_time_poisson(leaving_rate_matrix)
-            lij = draw_random_coord(leaving_rate_matrix) #the coordinate of the individual who will leave the group (i,j)
-            print("lij = ", lij)
-            incoming_rate_matrix = get_total_incoming_rate(m, n, wi, b, c, p, k, q, grids, big_lamda, lij)
-            print("\033[33mTotal Incoming rates (incoming_rate_matrix):\033[0m\n", incoming_rate_matrix)
-
-            with open('probabilities.txt', 'a') as f2:
-                f2.write(f"Iteration {i} incoming rate matrix:\n")
-                f2.write(str(incoming_rate_matrix) + "\n")
-                f2.write(f"-----------------------------------------------\n")
-
-            if np.any(incoming_rate_matrix < -1e-8):
-                raise ValueError(f"\033[31mNegative values in incoming rates (incoming_rate_matrix)\033[0m\n: {incoming_rate_matrix}")
-            
-            if np.sum(incoming_rate_matrix) == 0:
-                raise ValueError("\033[31mSum of incoming rates (L) is zero, unable to draw random numbers.\033[0m")
-            
-            lij_prime = draw_random_coord(incoming_rate_matrix)
-            print("lij_prime = ", lij_prime)
-
-            # Update the grids
-            grids[lij] -= 1
-            grids[lij_prime] += 1
-            #print("\033[1;32mUpdated grids:\033[0m")
+    #TODO run 100 more times on the 100 time to see if punisher wins more or cooperator when we do not include the punishment effect 
+    for o in range(100): 
+        all_coop = 0
+        all_def = 0
+        all_pun = 0
+        for i in range(100):
+            grids = assign_initial_strategies(m, n) #row represents i, the # of coop; column represents j, the # of defectors; [0,n] for i and j
+            #print("\033[1;32mEqually distributed grids:\033[0m")
             #print(grids)
 
-            if np.any(grids < 0):
-                raise ValueError(f"\033[31mNegative values in grids after iteration:\033[0m\n{grids}")
-            
-            
-            T += tau
-            
+            # with open('output.txt', 'w') as f1:
+            #     f1.write("")  # Clear file content at the start
 
-        with open('output.txt', 'a') as f1:
-            f1.write(f"Iteration {i} final grid:\n")
-            f1.write(str(grids) + "\n")
-            f1.flush()
-        if grids[0,0] == m:
-            all_pun += 1
-        elif grids[0,n] == m:
-            all_def += 1
-        elif grids[n,0] == m:
-            all_coop += 1
-    # Add your simulation code here
+            # with open('probabilities.txt', 'w') as f2:
+            #     f2.write("")  # Clear file content at the start
 
-    print("\033[1;32mSimulation is done.\033[0m") 
-    print(f"Cooperator wins: {all_coop}")
-    print(f"Defector wins: {all_def}")
-    print(f"Punisher wins: {all_pun}")  
+            # with open('incoming_rate_matrix.txt', 'w') as irm:
+            #     irm.write("")  # Clear file content at the start
+
+            T = 0.0  # time
+            
+        
+            while grids[0,0] != m and grids[0,n] != m and grids[n,0] != m:
+                leaving_rate_matrix = get_total_leaving_rate(m, n, wi, b, c, p, k, q, grids, big_lamda)
+                #print("\033[33mTotal Leaving rates (leaving_rate_matrix):\033[0m\n", leaving_rate_matrix) 
+                # with open('probabilities.txt', 'a') as f2:
+                #     f2.write(f"Iteration {i} leaving rate matrix:\n")
+                #     f2.write(str(leaving_rate_matrix) + "\n")
+
+                if np.any(leaving_rate_matrix < -1e-8):
+                    raise ValueError(f"\033[31mNegative values in leaving rates (leaving_rate_matrix)\033[0m\n: {leaving_rate_matrix}")
+
+                if np.sum(leaving_rate_matrix) == 0:
+                    raise ValueError("\033[31mSum of leaving rates (L) is zero, unable to draw random numbers.\033[0m")
+                
+                tau = draw_time_poisson(leaving_rate_matrix)
+                lij = draw_random_coord(leaving_rate_matrix) #the coordinate of the individual who will leave the group (i,j)
+                #print("lij = ", lij)
+                incoming_rate_matrix = get_total_incoming_rate(m, n, wi, b, c, p, k, q, grids, big_lamda, lij)
+
+                # with open('probabilities.txt', 'a') as f2:
+                #     f2.write(f"group at = {lij} leaves\n")
+                #     f2.write(f"Iteration {i} incoming rate matrix:\n")
+                #     f2.write(str(incoming_rate_matrix) + "\n")
+
+                if np.any(incoming_rate_matrix < -1e-8):
+                    raise ValueError(f"\033[31mNegative values in incoming rates (incoming_rate_matrix)\033[0m\n: {incoming_rate_matrix}")
+                
+                if np.sum(incoming_rate_matrix) == 0:
+                    raise ValueError("\033[31mSum of incoming rates (L) is zero, unable to draw random numbers.\033[0m")
+                
+                lij_prime = draw_random_coord(incoming_rate_matrix)
+                #print("lij_prime = ", lij_prime)
+                # with open('probabilities.txt', 'a') as f2:
+                #     f2.write(f"group at = {lij} lands at {lij_prime}\n")
+                #     f2.write(f"-----------------------------------------------\n")
+
+                # Update the grids
+                grids[lij] -= 1
+                grids[lij_prime] += 1
+                #print("\033[1;32mUpdated grids:\033[0m")
+                #print(grids)
+
+                if np.any(grids < 0):
+                    raise ValueError(f"\033[31mNegative values in grids after iteration:\033[0m\n{grids}")
+                
+                
+                T += tau
+                
+
+            with open('output.txt', 'a') as f1:
+                f1.write(f"Iteration {o} Iteration {i} final grid:\n")
+                f1.write(str(grids) + "\n")
+                f1.flush()
+            if grids[0,0] == m:
+                all_pun += 1
+            elif grids[0,n] == m:
+                all_def += 1
+            elif grids[n,0] == m:
+                all_coop += 1
+        # Add your simulation code here
+
+        print("\033[1;32mSimulation is done.\033[0m") 
+        # print(f"Cooperator wins: {all_coop}")
+        # print(f"Defector wins: {all_def}")
+        # print(f"Punisher wins: {all_pun}")  
+        if all_coop > all_pun:
+            c_vs_p_cwin += 1
+        elif all_pun > all_coop:
+            c_vs_p_pwin += 1
+        elif all_coop == all_pun:
+            c_vs_p_equal += 1
+    
+    print(f"c_vs_p_cwin: {c_vs_p_cwin}")
+    print(f"c_vs_p_pwin: {c_vs_p_pwin}")
+    print(f"c_vs_p_equal: {c_vs_p_equal}")  
+    
 if __name__ == "__main__":
     main()
