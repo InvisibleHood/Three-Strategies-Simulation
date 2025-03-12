@@ -2,18 +2,6 @@ import random
 import numpy as np
 import sys
 
-# Define a simple class to hold parameters
-# class Params:
-#     def __init__(self, wi, b, c, p, k, q, m, n):
-#         self.wi = wi
-#         self.b = b
-#         self.c = c
-#         self.p = p
-#         self.k = k
-#         self.q = q
-#         self.m = m
-#         self.n = n
-
 def assign_initial_strategies(m, n):  # Should give an upper triangular matrix
     grids = np.zeros((n + 1, n + 1))
     # Generate a list of all valid (i, j) pairs for the upper-triangular region.
@@ -146,7 +134,6 @@ def draw_time_poisson(leaving_rate_matrix):
 
 def draw_random_coord(matrix):
     prob_matrix = matrix / np.sum(matrix)
-    #print("\033[33mProbability matrix (prob_matrix):\033[0m\n", prob_matrix)
     flat_probs = prob_matrix.flatten()  
     chosen_idx = np.random.choice(len(flat_probs), p=flat_probs)
     return np.unravel_index(chosen_idx, prob_matrix.shape)  # Convert back to (row, col)
@@ -186,21 +173,11 @@ def main():
             # with open('output.txt', 'w') as f1:
             #     f1.write("")  # Clear file content at the start
 
-            # with open('probabilities.txt', 'w') as f2:
-            #     f2.write("")  # Clear file content at the start
-
-            # with open('incoming_rate_matrix.txt', 'w') as irm:
-            #     irm.write("")  # Clear file content at the start
-
             T = 0.0  # time
             
         
             while grids[0,0] != m and grids[0,n] != m and grids[n,0] != m:
                 leaving_rate_matrix = get_total_leaving_rate(m, n, wi, b, c, p, k, q, grids, big_lamda)
-                #print("\033[33mTotal Leaving rates (leaving_rate_matrix):\033[0m\n", leaving_rate_matrix) 
-                # with open('probabilities.txt', 'a') as f2:
-                #     f2.write(f"Iteration {i} leaving rate matrix:\n")
-                #     f2.write(str(leaving_rate_matrix) + "\n")
 
                 if np.any(leaving_rate_matrix < -1e-8):
                     raise ValueError(f"\033[31mNegative values in leaving rates (leaving_rate_matrix)\033[0m\n: {leaving_rate_matrix}")
@@ -210,13 +187,7 @@ def main():
                 
                 tau = draw_time_poisson(leaving_rate_matrix)
                 lij = draw_random_coord(leaving_rate_matrix) #the coordinate of the individual who will leave the group (i,j)
-                #print("lij = ", lij)
                 incoming_rate_matrix = get_total_incoming_rate(m, n, wi, b, c, p, k, q, grids, big_lamda, lij)
-
-                # with open('probabilities.txt', 'a') as f2:
-                #     f2.write(f"group at = {lij} leaves\n")
-                #     f2.write(f"Iteration {i} incoming rate matrix:\n")
-                #     f2.write(str(incoming_rate_matrix) + "\n")
 
                 if np.any(incoming_rate_matrix < -1e-8):
                     raise ValueError(f"\033[31mNegative values in incoming rates (incoming_rate_matrix)\033[0m\n: {incoming_rate_matrix}")
@@ -225,10 +196,6 @@ def main():
                     raise ValueError("\033[31mSum of incoming rates (L) is zero, unable to draw random numbers.\033[0m")
                 
                 lij_prime = draw_random_coord(incoming_rate_matrix)
-                #print("lij_prime = ", lij_prime)
-                # with open('probabilities.txt', 'a') as f2:
-                #     f2.write(f"group at = {lij} lands at {lij_prime}\n")
-                #     f2.write(f"-----------------------------------------------\n")
 
                 # Update the grids
                 grids[lij] -= 1
