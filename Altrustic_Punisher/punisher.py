@@ -6,6 +6,7 @@ def assign_initial_strategies(m, n):  # Should give an upper triangular matrix
     grids = np.zeros((n + 1, n + 1))
     # Generate a list of all valid (i, j) pairs for the upper-triangular region.
     valid_indices = [(i, j) for i in range(n + 1) for j in range(n - i + 1)]
+    #print(valid_indices)
     for _ in range(m):
         i, j = random.choice(valid_indices)
         grids[i][j] += 1
@@ -36,8 +37,8 @@ def leaving_rate(i, j, pi_c, pi_d, pi_p, wi, m, n, grids, big_lambda, b, c, q, p
         return gl
 
     #Individual level:
-    #Cooperator reproduces & punisher dies
     fij = frac(i, j, m, grids)
+    #Cooperator reproduces & punisher dies
     cp = m * fij * i * (1 + wi * pi_c) * ((n-i-j)/ n)
     #Punisher reproduces & Cooperator dies
     pc = m * fij * (n - i - j) * (1 + wi * pi_p) * (i / n)
@@ -77,42 +78,78 @@ def get_total_incoming_rate(m, n, wi, b, c, p, k, q, grids, big_lamda, lij):
         #(u,v) == (i + 1, j) cooperator reproduces & punisher dies
         indi = i * (1 + wi * get_coop_payoff(b, c, i, j, n)) * (n - i - j) / n
         grp = big_lamda * fij * m * rou((i + 1)/n, j/n, i/n, j/n,b,c,q,p,k) * frac(i + 1, j, m, grids)
+        if (rou((i + 1)/n, j/n, i/n, j/n,b,c,q,p,k) < 0):
+            raise ValueError(f"\033[31mNegative rou value encountered at ({i + 1}, {j})\033[0m")
         incoming_rate_matrix[i + 1, j] = (indi + grp) 
+        if incoming_rate_matrix[i + 1, j] < 0:
+            print(indi, grp)
+            raise ValueError(f"\033[31mNegative incoming rate encountered at ({i + 1}, {j})\033[0m")
+            
 
         #(u,v) == (i + 1, j - 1) cooperator reproduces & defector dies
         if (j > 0):
             indi = i * (1 + wi * get_coop_payoff(b, c, i, j, n)) * j / n
             grp = big_lamda * fij * m * rou((i + 1)/n, (j-1)/n, i/n, j/n,b,c,q,p,k) * frac(i + 1, j - 1, m, grids)
+            if (rou((i + 1)/n, (j-1)/n, i/n, j/n,b,c,q,p,k) < 0):
+                raise ValueError(f"\033[31mNegative rou value encountered at ({i + 1}, {j - 1})\033[0m")
             incoming_rate_matrix[i + 1, j - 1] = (indi + grp)
+            if incoming_rate_matrix[i + 1, j - 1] < 0:
+                print(indi, grp)
+                raise ValueError(f"\033[31mNegative incoming rate encountered at ({i + 1}, {j - 1})\033[0m")
         
     if i > 0:
         #(u,v) == (i - 1, j) punisher reproduces & cooperator dies
         indi = (n-i-j) * (1 + wi * get_pun_payoff(b, c, q, k, i, j, n)) * i / n
         grp = big_lamda * fij * m * rou((i - 1)/n, j/n, i/n, j/n,b,c,q,p,k) * frac(i - 1, j, m, grids)
+        if (rou((i - 1)/n, j/n, i/n, j/n,b,c,q,p,k) < 0):
+            raise ValueError(f"\033[31mNegative rou value encountered at ({i - 1}, {j})\033[0m")
         incoming_rate_matrix[i - 1, j] = (indi + grp)
+        if incoming_rate_matrix[i - 1, j] < 0:
+            print(indi, grp)
+            raise ValueError(f"\033[31mNegative incoming rate encountered at ({i - 1}, {j})\033[0m")
 
         #(u,v) == (i - 1, j + 1) defector reproduces & cooperator dies
         indi = j * (1 + wi * get_def_payoff(b, p, i, j, n)) * i / n
         grp = big_lamda * fij * m * rou((i - 1)/n, (j+1)/n, i/n, j/n,b,c,q,p,k) * frac(i - 1, j + 1, m, grids)
+        if (rou((i - 1)/n, (j+1)/n, i/n, j/n,b,c,q,p,k) < 0):
+            raise ValueError(f"\033[31mNegative rou value encountered at ({i - 1}, {j + 1})\033[0m")
         incoming_rate_matrix[i - 1, j + 1] = (indi + grp)
+        if incoming_rate_matrix[i - 1, j + 1] < 0:
+            print(indi, grp)
+            raise ValueError(f"\033[31mNegative incoming rate encountered at ({i - 1}, {j + 1})\033[0m")
     
     if j < n:
         #(u,v) == (i, j + 1) defector reproduces & punisher dies
         indi = j * (1 + wi * get_def_payoff(b, p, i, j, n)) * (n - i - j) / n
         grp = big_lamda * fij * m * rou(i/n, (j+1)/n, i/n, j/n,b,c,q,p,k) * frac(i, j + 1, m, grids)
+        if (rou(i/n, (j+1)/n, i/n, j/n,b,c,q,p,k) < 0):
+            raise ValueError(f"\033[31mNegative rou value encountered at ({i}, {j + 1})\033[0m")
         incoming_rate_matrix[i, j + 1] = (indi + grp)
+        if incoming_rate_matrix[i, j + 1] < 0:
+            print(indi, grp)
+            raise ValueError(f"\033[31mNegative incoming rate encountered at ({i}, {j + 1})\033[0m")
 
     if j > 0:   
         #(u,v) == (i, j - 1) punisher reproduces & defector dies
         indi = (n-i-j) * (1 + wi * get_pun_payoff(b, c, q, k, i, j, n)) * j / n
         grp = big_lamda * fij * m * rou(i/n, (j-1)/n, i/n, j/n,b,c,q,p,k) * frac(i, j - 1, m, grids)
+        if rou(i/n, (j-1)/n, i/n, j/n,b,c,q,p,k) < 0:
+            raise ValueError(f"\033[31mNegative rou value encountered at ({i}, {j - 1})\033[0m")
         incoming_rate_matrix[i, j - 1] = (indi + grp)
+        if incoming_rate_matrix[i, j - 1] < 0:
+            print(indi, grp)
+            raise ValueError(f"\033[31mNegative incoming rate encountered at ({i}, {j - 1})\033[0m")
 
     #Group level:
     for d in range(n + 1):
         for l in range(n - d + 1):
             if abs(d - i) > 1 or abs(l - j) > 1 or (d == i + 1 and l == j + 1) or (d == i - 1 and l == j - 1):
                 incoming_rate_matrix[d,l] = (big_lamda * fij * m * rou(d/n, l/n, i/n, j/n,b,c,q,p,k) * frac(d,l,m,grids))
+                if rou(d/n, l/n, i/n, j/n,b,c,q,p,k) < 0:
+                    raise ValueError(f"\033[31mNegative rou value encountered at ({d}, {l})\033[0m")
+                if incoming_rate_matrix[d,l] < 0:
+                    print(big_lamda, fij, m, rou(d/n, l/n, i/n, j/n,b,c,q,p,k), frac(d,l,m,grids))
+                    raise ValueError(f"\033[31mNegative incoming rate encountered at ({d}, {l})\033[0m")
             
     return incoming_rate_matrix
 
@@ -140,32 +177,29 @@ def draw_random_coord(matrix):
 
 def main():
     m = 20   # Number of groups 
-    n = 6    # Number of individuals in each group
+    n = 3    # Number of individuals in each group
     
     # Define parameters
-    wi = 0.9  # Intensity of individual-level selection
-    b = 2.0     # Benefit of cooperation
+    wi = 0.0001  # Intensity of individual-level selection based on the payoff      
+    b = 3.0     # Benefit of cooperation
     c = 1.0     # Cost of benefiting others 
-    p = 0   # Additional cost to confer a punishment to a defector
+    p = 20   # Additional cost to confer a punishment to a defector
     k = 0     # Fixed cost of punishment for each interaction 
-    q = 0   # Single fixed cost to confer punishment on defectors 
+    q = 10   # Single fixed cost to confer punishment on defectors 
 
     big_lamda = 0.1     #rate of group-level competition in which each group engages in pairwise competitions with other groups 
-    
-    
-    with open('output.txt', 'w') as f1:
-        f1.write("")  # Clear file content at the start
-        
+    all_coop = 0
+    all_def = 0
+    all_pun = 0
     for i in range(100):
-        grids = assign_initial_strategies(m, n) #row represents i, the # of coop; column represents j, the # of defectors; [0,n] for i and j
-        #print("\033[1;32mEqually distributed grids:\033[0m")
-        #print(grids)
-
+        grids = assign_initial_strategies(m, n) #row represents i, the # of coop; column represents j, the # of defectors; i,j \in [0,n] 
+        print("\033[1;32mEqually distributed grids:\033[0m")
+        print(grids)
+        # break
         with open('output.txt', 'w') as f1:
             f1.write("")  # Clear file content at the start
 
         T = 0.0  # time
-        
     
         while grids[0,0] != m and grids[0,n] != m and grids[n,0] != m:
             leaving_rate_matrix = get_total_leaving_rate(m, n, wi, b, c, p, k, q, grids, big_lamda)
@@ -182,7 +216,7 @@ def main():
 
             if np.any(incoming_rate_matrix < -1e-8):
                 raise ValueError(f"\033[31mNegative values in incoming rates (incoming_rate_matrix)\033[0m\n: {incoming_rate_matrix}")
-            
+            #When wi >= 5, it can have negative values in incoming_rate_matrix, which is expected as the replication rate can be negative.
             if np.sum(incoming_rate_matrix) == 0:
                 raise ValueError("\033[31mSum of incoming rates (L) is zero, unable to draw random numbers.\033[0m")
             
@@ -200,15 +234,22 @@ def main():
             
             T += tau
             
+        if grids[0,0] == m:
+            all_pun += 1
+        elif grids[0,n] == m:
+            all_def += 1
+        elif grids[n,0] == m:
+            all_coop += 1
 
         with open('output.txt', 'a') as f1:
             f1.write(str(grids) + "\n")
             f1.flush()
 
     print("\033[1;32mSimulation is done.\033[0m") 
-    # print(f"Cooperator wins: {all_coop}")
-    # print(f"Defector wins: {all_def}")
-    # print(f"Punisher wins: {all_pun}")  
+    
+    print(f"Cooperator wins: {all_coop}")
+    print(f"Defector wins: {all_def}")
+    print(f"Punisher wins: {all_pun}")  
     
 if __name__ == "__main__":
     main()
