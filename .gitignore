@@ -1,0 +1,12 @@
+# macOS system files
+.DS_Store
+
+# Output files
+output.txt
+
+# PDF documents (optional, if you don't want any PDFs in the repo)
+*.pdf
+
+# Python cache
+__pycache__/
+*.pyc
